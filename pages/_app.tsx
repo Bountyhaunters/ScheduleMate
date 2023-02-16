@@ -6,6 +6,18 @@ import { configureChains, createClient, WagmiConfig } from "wagmi";
 import { mainnet, polygon, optimism, arbitrum, goerli } from "wagmi/chains";
 import { publicProvider } from "wagmi/providers/public";
 import Navbar from "../components/Navbar";
+import {
+  LivepeerConfig,
+  createReactClient,
+  studioProvider,
+} from '@livepeer/react';
+import * as React from 'react';
+
+const livepeerClient = createReactClient({
+  provider: studioProvider({
+    apiKey: "4559e244-d59a-421d-8cb7-a113654890ad",
+  }),
+});
 
 const { chains, provider, webSocketProvider } = configureChains(
   [
@@ -13,7 +25,7 @@ const { chains, provider, webSocketProvider } = configureChains(
     polygon,
     optimism,
     arbitrum,
-    ...(process.env.NEXT_PUBLIC_ENABLE_TESTNETS === "true" ? [goerli] : []),
+    goerli
   ],
   [publicProvider()]
 );
@@ -34,10 +46,12 @@ function MyApp({ Component, pageProps }: AppProps) {
   return (
     <WagmiConfig client={wagmiClient}>
       <RainbowKitProvider chains={chains}>
-        <div className="mx-auto max-w-7xl">
-          <Navbar />
-          <Component {...pageProps} />
-        </div>
+        <LivepeerConfig client={livepeerClient}>
+          <div className="mx-auto max-w-7xl">
+            <Navbar />
+            <Component {...pageProps} />
+          </div>
+        </LivepeerConfig>
       </RainbowKitProvider>
     </WagmiConfig>
   );
