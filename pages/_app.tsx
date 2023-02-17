@@ -1,27 +1,43 @@
 import "../styles/globals.css";
 import "@rainbow-me/rainbowkit/styles.css";
 import type { AppProps } from "next/app";
-import { RainbowKitProvider, getDefaultWallets } from "@rainbow-me/rainbowkit";
+import { connectorsForWallets, RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { configureChains, createClient, WagmiConfig } from "wagmi";
-import { mainnet, polygon, optimism, arbitrum, goerli } from "wagmi/chains";
+import { goerli } from "wagmi/chains";
 import { publicProvider } from "wagmi/providers/public";
+import { metaMaskWallet } from "@rainbow-me/rainbowkit/wallets";
+import { ArcanaConnector } from "@arcana/auth-wagmi";
 import Navbar from "../components/Navbar";
 
-const { chains, provider, webSocketProvider } = configureChains(
-  [
-    mainnet,
-    polygon,
-    optimism,
-    arbitrum,
-    ...(process.env.NEXT_PUBLIC_ENABLE_TESTNETS === "true" ? [goerli] : []),
-  ],
-  [publicProvider()]
-);
+const { chains, provider, webSocketProvider } = configureChains([goerli], [publicProvider()]);
 
-const { connectors } = getDefaultWallets({
-  appName: "ScheduleMate",
-  chains,
-});
+export const ArcanaRainbowConnector = (chains: any) => {
+  return {
+    id: "arcana-auth",
+    name: "Arcana Wallet",
+    iconUrl: "https://docs.arcana.network/img/an_favicon.svg",
+    iconBackground: "#ffffff",
+    createConnector: () => {
+      const connector = new ArcanaConnector({
+        chains,
+        options: {
+          appId: process.env.NEXT_PUBLIC_ARCANA_APP_ID!,
+        },
+      });
+      return {
+        connector,
+      };
+    },
+  };
+};
+
+const connectors = connectorsForWallets([
+  {
+    groupName: "Recommended",
+    //@ts-ignore
+    wallets: [ArcanaRainbowConnector({ chains }), metaMaskWallet({ chains })],
+  },
+]);
 
 const wagmiClient = createClient({
   autoConnect: true,
