@@ -2,7 +2,7 @@ import "../styles/globals.css";
 import "@rainbow-me/rainbowkit/styles.css";
 import type { AppProps } from "next/app";
 import { RainbowKitProvider, getDefaultWallets } from "@rainbow-me/rainbowkit";
-import { configureChains, createClient, WagmiConfig } from "wagmi";
+import { Chain, configureChains, createClient, WagmiConfig } from "wagmi";
 import { mainnet, polygon, optimism, arbitrum, goerli } from "wagmi/chains";
 import { publicProvider } from "wagmi/providers/public";
 import Navbar from "../components/Navbar";
@@ -19,13 +19,35 @@ const livepeerClient = createReactClient({
   }),
 });
 
+const hyperspace: Chain = {
+  id: 3141,
+  name: 'Filecoin',
+  network: 'Filecoin - Hyperspace testnet',
+  nativeCurrency: {
+    decimals: 1,
+    name: 'Test FIL',
+    symbol: 'tFIL',
+  },
+  rpcUrls: {
+    default: {
+      http: ['https://api.hyperspace.node.glif.io/rpc/v1'],
+    },
+  },
+  blockExplorers: {
+    default: { name: 'hyperspace', url: 'https://hyperspace.filfox.info/en' },
+    etherscan: { name: 'hyperspace', url: 'https://hyperspace.filfox.info/en' },
+  },
+  testnet: true,
+};
+
 const { chains, provider, webSocketProvider } = configureChains(
   [
     mainnet,
     polygon,
     optimism,
     arbitrum,
-    goerli
+    goerli,
+    hyperspace
   ],
   [publicProvider()]
 );
