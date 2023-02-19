@@ -5,7 +5,7 @@ import { useRouter } from "next/router";
 import { useEffect, useMemo } from "react";
 import { useAccount, useContractWrite, usePrepareContractWrite } from "wagmi";
 
-import { videoNftAbi } from "./videoNftAbi";
+import { videoNftAbi } from "../../abi/videoNftAbi";
 
 export default function WagmiNft() {
   const { address } = useAccount();
