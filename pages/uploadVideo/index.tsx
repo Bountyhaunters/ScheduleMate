@@ -65,6 +65,10 @@ export default function Asset() {
         [progress],
     );
 
+    function mintNft(assetId: string){
+
+    }
+
     return (
         <div>
             {!asset && (
@@ -80,7 +84,7 @@ export default function Asset() {
                 <>
                     <Player title={asset[0].name} playbackId={asset[0].playbackId} />
                     <button onClick={() => {
-                        router.isFallback && router.replace("/mintVideo?id=" + asset[0].id);
+                        mintNft(asset[0].id);
                     }}
                     > Mint Video !</button>
                 </>
