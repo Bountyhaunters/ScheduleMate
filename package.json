@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@arcana/auth-wagmi": "^0.0.2",
     "@livepeer/react": "^2.2.2",
     "@rainbow-me/rainbowkit": "^0.8.1",
     "ethers": "^5.0.0",
