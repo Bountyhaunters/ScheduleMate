@@ -1,11 +1,13 @@
-import { Player, useAssetMetrics, useCreateAsset } from '@livepeer/react';
-import router, { Router } from 'next/router';
-
+import { Player, useAsset, useAssetMetrics, useCreateAsset, useUpdateAsset } from '@livepeer/react';
+import { useAccount, useContractWrite, usePrepareContractWrite } from 'wagmi';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { videoNftAbi } from './videoNftAbi';
 
 export default function Asset() {
+    const { address } = useAccount();
     const [video, setVideo] = useState<File | undefined>();
+    const [assetId, setAssetId] = useState("");
     const {
         mutate: createAsset,
         data: asset,
@@ -20,13 +22,13 @@ export default function Asset() {
             : null,
     );
     const { data: metrics } = useAssetMetrics({
-        assetId: asset?.[0].id,
+        assetId: assetId,
         refetchInterval: 30000,
     });
 
     useEffect(() => {
         if (asset) {
-            console.log(asset?.[0].id)
+            setAssetId(asset?.[0].id);
         }
     }, [asset])
 
@@ -42,6 +44,13 @@ export default function Asset() {
         },
         maxFiles: 1,
         onDrop,
+    });
+
+    const { data: assetMint } = useAsset({
+        assetId,
+        enabled: assetId.length === 36,
+        refetchInterval: (asset) =>
+            asset?.storage?.status?.phase !== 'ready' ? 5000 : false,
     });
 
     const isLoading = useMemo(
@@ -65,9 +74,43 @@ export default function Asset() {
         [progress],
     );
 
-    function mintNft(assetId: string){
+    const { mutate: updateAsset } = useUpdateAsset(
+        assetMint
+            ? {
+                assetId: assetMint.id,
+                storage: {
+                    ipfs: true
+                },
+            }
+            : null,
+    );
 
-    }
+    const { config } = usePrepareContractWrite({
+        // The demo NFT contract address on Polygon Mumbai
+        address: '0xC02dffb6ddE184289b52C343697FE39464c45A36',
+        abi: videoNftAbi,
+        // Function on the contract
+        functionName: 'safeMint',
+        // Arguments for the mint function
+        args:
+            address && assetMint?.storage?.ipfs?.nftMetadata?.url
+                ? [address, assetMint?.storage?.ipfs?.nftMetadata?.url]
+                : undefined,
+        enabled: Boolean(address && assetMint?.storage?.ipfs?.nftMetadata?.url),
+    });
+
+    const {
+        data: contractWriteData,
+        isSuccess,
+        write,
+        error: contractWriteError,
+    } = useContractWrite(config);
+
+    useEffect(() => {
+        if (contractWriteData) {
+            console.log(contractWriteData.hash);
+        }
+    }, [contractWriteData])
 
     return (
         <div>
@@ -80,13 +123,38 @@ export default function Asset() {
                 </div>
             )}
 
-            {asset?.[0]?.playbackId && (
+            {address && assetMint && (
                 <>
-                    <Player title={asset[0].name} playbackId={asset[0].playbackId} />
-                    <button onClick={() => {
-                        mintNft(asset[0].id);
-                    }}
-                    > Mint Video !</button>
+                    <p>{assetId}</p>
+                    {assetMint?.status?.phase === 'ready' &&
+                        assetMint?.storage?.status?.phase !== 'ready' ? (
+                        <button
+                            onClick={() => {
+                                updateAsset?.();
+                            }}
+                        >
+                            Upload to IPFS
+                        </button>
+                    ) : contractWriteData?.hash && isSuccess ? (
+                        <a
+                            target="_blank"
+                            href={`https://hyperspace.filfox.info/en/message/${contractWriteData.hash}`}
+                        >
+                            <button>View Mint Transaction</button>
+                        </a>
+                    ) : contractWriteError ? (
+                        <p>{contractWriteError.message}</p>
+                    ) : assetMint?.storage?.status?.phase === 'ready' && write ? (
+                        <button
+                            onClick={() => {
+                                write();
+                            }}
+                        >
+                            Mint NFT
+                        </button>
+                    ) : (
+                        <></>
+                    )}
                 </>
             )}
 
@@ -99,7 +167,7 @@ export default function Asset() {
 
                 {progressFormatted && <p>{progressFormatted}</p>}
 
-                {!asset?.[0].id && (
+                {!assetId && (
                     <button
                         onClick={() => {
                             createAsset?.();
